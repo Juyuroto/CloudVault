@@ -4,7 +4,7 @@
 ![Status](https://img.shields.io/badge/status-Production-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## 📋 Table des matières
+## Table des matières
 
 - [Vue d'ensemble](#vue-densemble)
 - [Architecture](#architecture)
@@ -19,7 +19,7 @@
 
 ---
 
-## 🎯 Vue d'ensemble
+## Vue d'ensemble
 
 CloudVault est une plateforme de stockage en cloud open source permettant aux utilisateurs de :
 - ✅ Créer un compte personnel sécurisé
@@ -32,36 +32,36 @@ C'est une alternative open source à Google Drive ou Nextcloud, déployée sur u
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### Diagramme Infrastructure
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Internet / Utilisateurs              │
-└──────────────────────────┬────────────────────────────┘
+│                 Internet / Utilisateurs                 │
+└──────────────────────────┬──────────────────────────────┘
                            │
-                    ┌──────▼──────┐
+                    ┌──────▼───────┐
                     │ Load Balancer│
                     │  (HAProxy)   │
-                    └──────┬──────┘
+                    └──────┬───────┘
                            │
         ┌──────────────────┼──────────────────┐
         │                  │                  │
-   ┌────▼───┐        ┌────▼────┐      ┌─────▼────┐
-   │API Pod 1│        │API Pod 2│      │Frontend  │
-   │Node.js  │        │Node.js  │      │React     │
-   └────┬───┘        └────┬────┘      └─────┬────┘
-        │                 │                 │
-        └─────────────────┼─────────────────┘
+   ┌────▼────┐        ┌────▼────┐      ┌──────▼────┐
+   │API Pod 1│        │API Pod 2│      │Frontend   │
+   │Node.js  │        │Node.js  │      │React      │
+   └────┬────┘        └────┬────┘      └─────┬─────┘
+        │                  │                 │
+        └──────────────────┼─────────────────┘
                     Kubernetes K3s
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-   ┌────▼────┐    ┌──────▼──────┐   ┌─────▼──────┐
-   │PostgreSQL│    │TrueNAS (NFS)│   │Prometheus  │
-   │Métadonnées   │Stockage      │   │Monitoring  │
-   └──────────┘    └──────────────┘   └────────────┘
+                           │
+         ┌─────────────────┼──────────────────┐
+         │                 │                  │
+   ┌─────▼─────┐    ┌──────▼──────┐     ┌─────▼──────┐
+   │PostgreSQL │    │TrueNAS (NFS)│     │Prometheus  │
+   │Métadonnées│    │Stockage     │     │Monitoring  │
+   └───────────┘    └─────────────┘     └────────────┘
 ```
 
 ### Stack Technologique
@@ -92,7 +92,7 @@ C'est une alternative open source à Google Drive ou Nextcloud, déployée sur u
 
 ---
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
 ### Actuelles (MVP)
 
@@ -122,17 +122,17 @@ C'est une alternative open source à Google Drive ou Nextcloud, déployée sur u
 
 ### Futures Améliorations
 
-- 🔜 Partage de fichiers
-- 🔜 Versioning des fichiers
-- 🔜 Chiffrement end-to-end
-- 🔜 Application mobile
-- 🔜 API publique
-- 🔜 Intégration OAuth2
-- 🔜 Auto-scaling avancé
+- Partage de fichiers
+- Versioning des fichiers
+- Chiffrement end-to-end
+- Application mobile
+- API publique
+- Intégration OAuth2
+- Auto-scaling avancé
 
 ---
 
-## 📋 Prérequis
+## Prérequis
 
 ### Matériel
 
@@ -152,7 +152,7 @@ C'est une alternative open source à Google Drive ou Nextcloud, déployée sur u
 
 ---
 
-## 🚀 Installation Infrastructure
+## Installation Infrastructure
 
 ### Étape 1 : Configurer TrueNAS
 
@@ -306,7 +306,7 @@ systemctl restart postgresql
 
 ---
 
-## 💻 Installation Application
+## Installation Application
 
 ### Sur ton PC Admin
 
@@ -415,7 +415,7 @@ export const deleteFile = (fileId, token) => {
 
 ---
 
-## 🐳 Déploiement Kubernetes
+## Déploiement Kubernetes
 
 ### Étape 1 : Créer les Dockerfiles
 
@@ -590,7 +590,7 @@ kubectl get services
 
 ---
 
-## 🎮 Utilisation
+## Utilisation
 
 ### Accéder à CloudVault
 
@@ -635,7 +635,7 @@ kubectl get services
 
 ---
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### Kubernetes
 
@@ -683,7 +683,7 @@ docker images | grep cloudvault
 
 ---
 
-## 📊 Monitoring (Optionnel)
+## Monitoring (Optionnel)
 
 Pour ajouter du monitoring avec Prometheus + Grafana :
 
@@ -698,7 +698,7 @@ http://IP-LOADBALANCER:3000  (Grafana)
 
 ---
 
-## 📝 Contribution
+## Contribution
 
 Pour contribuer au projet :
 
@@ -713,20 +713,14 @@ git push origin feature/nouvelle-feature
 
 ---
 
-## 📄 License
+## License
 
 Ce projet est sous license MIT. Voir `LICENSE` pour plus de détails.
 
 ---
 
-## 📧 Support
+## Support
 
 Pour toute question ou problème :
 - Ouvrir une issue sur GitHub
-- Contacter : ton-email@example.com
-
----
-
-## 🎓 Crédits
-
-Projet créé comme démonstration d'infrastructure cloud moderne avec Kubernetes, Docker, PostgreSQL et TrueNAS.
+- Contacter : corazzinialain@gmail.com
