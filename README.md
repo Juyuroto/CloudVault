@@ -1,236 +1,376 @@
-# CloudVault - Plateforme de Stockage Cloud Open Source
+# CloudVault - Guide Complet d'Installation et d'Architecture
 
-![Version](https://img.shields.io/badge/version-1.0-blue)
-![Status](https://img.shields.io/badge/status-Production-green)
-![License](https://img.shields.io/badge/license-MIT-green)
+## Qu'est-ce que CloudVault ?
 
-## Table des matières
+CloudVault est une plateforme de stockage en cloud open source. Les utilisateurs peuvent :
+- Créer un compte personnel
+- Uploader des fichiers
+- Télécharger leurs fichiers de n'importe où
+- Supprimer et gérer leurs fichiers
 
-- [Vue d'ensemble](#vue-densemble)
-- [Architecture](#architecture)
-- [Fonctionnalités](#fonctionnalités)
-- [Prérequis](#prérequis)
-- [Installation Infrastructure](#installation-infrastructure)
-- [Installation Application](#installation-application)
-- [Déploiement Kubernetes](#déploiement-kubernetes)
-- [Utilisation](#utilisation)
-- [Troubleshooting](#troubleshooting)
-- [Contribution](#contribution)
+C'est comme **Google Drive ou Nextcloud**, mais hébergé sur **ta propre infrastructure**.
 
 ---
 
-## Vue d'ensemble
+## Architecture du Système
 
-CloudVault est une plateforme de stockage en cloud open source permettant aux utilisateurs de :
-- ✅ Créer un compte personnel sécurisé
-- ✅ Uploader et télécharger des fichiers à distance
-- ✅ Organiser ses fichiers dans une interface web intuitive
-- ✅ Accéder à ses fichiers depuis n'importe où
-- ✅ Gérer ses fichiers (supprimer, lister, etc.)
+```
+┌────────────────────────────────────────────────────────────────┐
+│                        INTERNET                                │
+└────────────────────────┬───────────────────────────────────────┘
+                         │
+                    ┌────▼────┐
+                    │ Routeur │
+                    │ Réseau  │
+                    └────┬────┘
+                         │
+        ┌────────────────┼──────────────┐
+        │                │              │
+   ┌────▼────┐      ┌────▼────┐    ┌────▼────┐
+   │   PC    │      │ Proxmox │    │ TrueNAS │
+   │ Admin   │      │ Serveur │    │ Stockage│
+   │ (Dev)   │      │ Calcul  │    │         │
+   └────┬────┘      └───┬─────┘    └────┬────┘
+        │               │               │
+        │        ┌──────┼──────┐        │
+        │        │      │      │        │
+    ┌───▼──┐  ┌──▼─┐ ┌──▼─┐ ┌──▼─┐      │
+    │ Code │  │K3s │ │K3s │ │PG  │      │
+    │React │  │Mas │ │Wor │ │SQL │      │
+    │Node  │  │ter │ │ker │ │    │      │
+    └──────┘  └──┬─┘ └──┬─┘ └──┬─┘      │
+                 │      │      │        │
+                 └──────┼──────┼────────┤
+                        │      │        │
+              ┌─────────▼──────▼───┐    │
+              │   Kubernetes K3s   │    │
+              │  ┌──────────────┐  │    │
+              │  │ API Pods     │  │    │
+              │  │ (x2 replicas)│  │    │
+              │  │ Frontend Pod │  │    │
+              │  └──────────────┘  │    │
+              │  ┌────────────┐    │    │
+              │  │ Persistent │    │    │
+              │  │ Volume NFS │────┼────┤
+              │  └────────────┘    │    │
+              └────────────────────┘    │
+                                        │
+                            ┌───────────▼──────┐
+                            │ TrueNAS Stockage │
+                            │ - Partage NFS    │
+                            │ - Fichiers users │
+                            │ - Backup         │
+                            └──────────────────┘
+```
 
-C'est une alternative open source à Google Drive ou Nextcloud, déployée sur une infrastructure cloud personnelle.
+### Comment ça marche ?
+
+1. **L'utilisateur** accède au frontend React via son navigateur
+2. **L'utilisateur** se connecte ou crée un compte
+3. **L'utilisateur** upload un fichier
+4. **Le frontend** envoie le fichier à l'API Node.js
+5. **L'API** vérifie l'authentification (JWT token)
+6. **L'API** sauvegarde le fichier sur TrueNAS via NFS
+7. **L'API** enregistre les métadonnées dans PostgreSQL
+8. **L'API** retourne une confirmation
+9. **Le fichier** est maintenant stocké en sécurité
 
 ---
 
-## Architecture
-
-### Diagramme Infrastructure
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                 Internet / Utilisateurs                 │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                    ┌──────▼───────┐
-                    │ Load Balancer│
-                    │  (HAProxy)   │
-                    └──────┬───────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-   ┌────▼────┐        ┌────▼────┐      ┌──────▼────┐
-   │API Pod 1│        │API Pod 2│      │Frontend   │
-   │Node.js  │        │Node.js  │      │React      │
-   └────┬────┘        └────┬────┘      └─────┬─────┘
-        │                  │                 │
-        └──────────────────┼─────────────────┘
-                    Kubernetes K3s
-                           │
-         ┌─────────────────┼──────────────────┐
-         │                 │                  │
-   ┌─────▼─────┐    ┌──────▼──────┐     ┌─────▼──────┐
-   │PostgreSQL │    │TrueNAS (NFS)│     │Prometheus  │
-   │Métadonnées│    │Stockage     │     │Monitoring  │
-   └───────────┘    └─────────────┘     └────────────┘
-```
-
-### Stack Technologique
+## Technologies Utilisées
 
 **Infrastructure :**
-- Proxmox (hyperviseur de virtualisation)
-- Kubernetes K3s (orchestration conteneurs)
-- Docker (conteneurisation)
-- TrueNAS (stockage distribué)
+- **Proxmox** : hyperviseur pour créer les VMs
+- **Kubernetes K3s** : orchestre les conteneurs
+- **Docker** : conteneurise les applications
+- **TrueNAS** : stockage distribué via NFS
 
-**Backend :**
-- Node.js 18+
-- Express.js
-- PostgreSQL 15+
-- JWT (authentification)
-- Multer (upload fichiers)
+**Développement :**
+- **Backend** : Node.js + Express (JavaScript)
+- **Frontend** : React 18 (JavaScript/JSX)
+- **Base de Données** : PostgreSQL (SQL)
+- **Authentification** : JWT (tokens sécurisés)
+- **Stockage Fichiers** : NFS via TrueNAS
 
-**Frontend :**
-- React 18
-- Axios (requêtes HTTP)
-- React Router (navigation)
-- TailwindCSS (styling)
-
-**DevOps :**
-- Kubernetes YAML
-- Docker
-- Prometheus + Grafana (monitoring optionnel)
+**Langages que tu vas utiliser :**
+```
+├─ JavaScript   : pour l'API Node.js et le Frontend React
+├─ JSX          : pour les composants React
+├─ SQL          : pour PostgreSQL
+├─ YAML         : pour les configurations Kubernetes et Docker
+└─ Bash         : pour les scripts de déploiement
+```
 
 ---
 
-## Fonctionnalités
-
-### Actuelles (MVP)
-
-- ✅ **Authentification**
-  - Création de compte (register)
-  - Connexion sécurisée (login)
-  - Tokens JWT pour sessions
-
-- ✅ **Gestion Fichiers**
-  - Upload de fichiers
-  - Téléchargement de fichiers
-  - Liste des fichiers personnels
-  - Suppression de fichiers
-  - Métadonnées (nom, taille, date)
-
-- ✅ **Interface Web**
-  - Dashboard utilisateur
-  - Formulaires login/register
-  - Gestion des fichiers graphique
-  - Design responsive
-
-- ✅ **Infrastructure**
-  - Déploiement Kubernetes
-  - Stockage persistant NFS
-  - Base de données PostgreSQL
-  - Monitoring basique
-
-### Futures Améliorations
-
-- Partage de fichiers
-- Versioning des fichiers
-- Chiffrement end-to-end
-- Application mobile
-- API publique
-- Intégration OAuth2
-- Auto-scaling avancé
-
----
-
-## Prérequis
+## Ce Que Tu Dois Avoir
 
 ### Matériel
 
-- **Serveur de calcul** : 4+ CPU, 8GB+ RAM (pour Proxmox + K3s)
-- **Serveur de stockage** : 2+ CPU, 4GB RAM, 500GB+ stockage (pour TrueNAS)
-- **Switch réseau** : pour connecter les serveurs
-- **PC administrateur** : pour développement et gestion
+- **Serveur Proxmox** : déjà installé ✅
+- **Serveur TrueNAS** : pour le stockage ✅
+- **PC Admin** : ton ordinateur pour développer
+- **Switch Réseau** : pour connecter tout ça
 
-### Logiciels
+### Logiciels sur PC Admin
 
-- **Proxmox 8.0+** : déjà installé sur serveur de calcul
-- **TrueNAS** : déjà installé sur serveur de stockage
-- **Kubernetes K3s** : sera installé dans les VMs
-- **Docker** : sera installé dans les VMs
-- **Node.js 18+** : sur PC admin pour développement
-- **Git** : pour versionner le code
+```bash
+Node.js 18+       # pour développer l'API et frontend
+npm               # gestionnaire de paquets (vient avec Node.js)
+Docker            # pour créer les images
+Git               # pour versionner le code
+```
+
+**Installation :**
+
+- **Node.js** : télécharger sur https://nodejs.org (version LTS)
+- **Docker** : télécharger sur https://docker.com
+- **Git** : télécharger sur https://git-scm.com
 
 ---
 
-## Installation Infrastructure
+## Installation Complète
 
-### Étape 1 : Configurer TrueNAS
+### ÉTAPE 0 : Vérifier le Réseau
 
-1. **Accéder à l'interface TrueNAS**
-   ```
-   http://IP-TRUENAS:8000
-   ```
+Assurez-vous que :
+- [ ] Votre réseau local est bien en 192.168.11.0/24
+- [ ] La plage 192.168.11.100-102 est libre (pas d'autres appareils)
+- [ ] Vous pouvez pinguer 192.168.11.10 (TrueNAS) depuis votre PC
+- [ ] Votre PC admin peut accéder à Proxmox
 
-2. **Créer un dataset CloudVault**
-   - Storage → Datasets
-   - Create Dataset : `cloudvault`
-   - Confirmer
+**Test rapide :**
+```bash
+# Depuis votre PC
+ping 192.168.11.10  # TrueNAS
+ping 192.168.11.1   # Gateway (votre routeur)
+```
 
-3. **Configurer le partage NFS**
-   - Storage → Datasets → cloudvault
-   - Partages → NFS
-   - Create NFS Share
+Si les pings fonctionnent, vous pouvez continuer.
+
+---
+
+### ÉTAPE 1 : Vérifier TrueNAS
+
+Tu dois avoir TrueNAS avec :
+
+```
+Dataset créé : /mnt/pool/cloudvault
+Partage NFS configuré
+IP : 192.168.11.10
+```
+
+**Pour créer le dataset et le partage NFS sur TrueNAS :**
+
+1. Se connecter à l'interface TrueNAS : http://192.168.11.10
+2. Aller dans **Storage** → **Pools**
+3. Créer un dataset nommé `cloudvault`
+4. Aller dans **Sharing** → **Unix Shares (NFS)**
+5. Créer un partage NFS :
    - Path : `/mnt/pool/cloudvault`
-   - Note l'IP TrueNAS et le chemin
+   - Authorized Networks : `192.168.11.0/24`
+   - Mapall User : `root`
+   - Mapall Group : `wheel`
 
-### Étape 2 : Créer les VMs dans Proxmox
+---
 
-1. **Créer VM K3s-Master**
-   ```
-   - CPU : 4 cores
-   - RAM : 8GB
-   - Storage : 50GB
-   - OS : Debian 12
-   - IP : 192.168.1.100
-   ```
+### ÉTAPE 2 : Créer les VMs dans Proxmox
 
-2. **Créer VM PostgreSQL**
-   ```
-   - CPU : 2 cores
-   - RAM : 4GB
-   - Storage : 30GB
-   - OS : Debian 12
-   - IP : 192.168.1.101
-   ```
+Tu dois créer **3 machines virtuelles** dans Proxmox.
 
-3. **Créer VM K3s-Worker (optionnel)**
-   ```
-   - CPU : 4 cores
-   - RAM : 8GB
-   - Storage : 50GB
-   - OS : Debian 12
-   - IP : 192.168.1.102
-   ```
+#### VM 1 : K3s-Master
 
-### Étape 3 : Installer K3s
+C'est le serveur principal qui orchestre tout (Kubernetes).
 
-**Sur VM K3s-Master :**
+```
+Accéder à Proxmox : https://IP-PROXMOX:8006
+
+Créer la VM :
+├─ Name           : k3s-master
+├─ VM ID          : 100
+├─ Memory         : 8192 MB (8 GB)
+├─ Cores          : 4
+├─ Disk           : 50 GB
+├─ OS             : Debian 12 (télécharger ISO)
+└─ Network        : Bridged
+
+Installer Debian avec configuration réseau :
+├─ IP             : 192.168.11.100/24
+├─ Gateway        : 192.168.11.1
+└─ DNS            : 8.8.8.8
+```
+
+#### VM 2 : PostgreSQL
+
+C'est le serveur de base de données.
+
+```
+Créer la VM :
+├─ Name           : postgresql
+├─ VM ID          : 101
+├─ Memory         : 4096 MB (4 GB)
+├─ Cores          : 2
+├─ Disk           : 30 GB
+├─ OS             : Debian 12
+└─ Network        : Bridged
+
+Installer Debian avec configuration réseau :
+├─ IP             : 192.168.11.101/24
+├─ Gateway        : 192.168.11.1
+└─ DNS            : 8.8.8.8
+```
+
+#### VM 3 : K3s-Worker (OPTIONNEL)
+
+Ça peut servir à scaler si tu as beaucoup de charge.
+
+```
+Créer la VM :
+├─ Name           : k3s-worker
+├─ VM ID          : 102
+├─ Memory         : 8192 MB (8 GB)
+├─ Cores          : 4
+├─ Disk           : 50 GB
+├─ OS             : Debian 12
+└─ Network        : Bridged
+
+Installer Debian avec configuration réseau :
+├─ IP             : 192.168.11.102/24
+├─ Gateway        : 192.168.11.1
+└─ DNS            : 8.8.8.8
+```
+
+---
+
+### ÉTAPE 3 : Installer K3s sur K3s-Master
+
+K3s est une version légère de Kubernetes.
 
 ```bash
 # Se connecter à la VM
-ssh root@192.168.1.100
+ssh root@192.168.11.100
 
-# Installer K3s
+# Mettre à jour Debian
+apt update && apt upgrade -y
+
+# Installer les outils NFS (REQUIS pour monter les volumes NFS)
+apt install nfs-common -y
+
+# Installer K3s (prend 2-3 minutes)
 curl -sfL https://get.k3s.io | sh -
 
-# Récupérer le token (noté pour les workers)
+# Attendre que ça démarre
+sleep 120
+
+# Vérifier que K3s fonctionne
+kubectl get nodes
+
+# Tu devrais voir :
+# NAME         STATUS   ROLES                  AGE
+# k3s-master   Ready    control-plane,master   2m
+
+# Récupérer le TOKEN (tu en auras besoin si tu crées un worker)
 cat /var/lib/rancher/k3s/server/node-token
+
+# IMPORTANT : copier ce token quelque part, tu en auras besoin !
 ```
 
-**Sur VM K3s-Worker (si vous en avez) :**
+---
+
+### ÉTAPE 4 : Installer K3s-Worker (SI TU LE CRÉES)
 
 ```bash
-ssh root@192.168.1.102
+# Se connecter à la VM worker
+ssh root@192.168.11.102
 
-curl -sfL https://get.k3s.io | K3S_URL=https://192.168.1.100:6443 \
-  K3S_TOKEN=votre-token-ici sh -
+# Mettre à jour Debian
+apt update && apt upgrade -y
+
+# Installer les outils NFS
+apt install nfs-common -y
+
+# Installer K3s en mode worker
+# Remplacer TOKEN par ce que tu as copié à l'étape 3
+curl -sfL https://get.k3s.io | \
+  K3S_URL=https://192.168.11.100:6443 \
+  K3S_TOKEN=K1234567890abc... sh -
+
+# Vérifier sur le master que le worker est connecté
+ssh root@192.168.11.100
+kubectl get nodes
+
+# Tu devrais voir :
+# NAME         STATUS   ROLES                  AGE
+# k3s-master   Ready    control-plane,master   10m
+# k3s-worker   Ready    <none>                 2m
 ```
 
-### Étape 4 : Configurer le Stockage NFS dans K3s
+---
 
-Sur VM K3s-Master, créer `nfs-storage.yaml` :
+### ÉTAPE 5 : Installer PostgreSQL
 
-```yaml
+PostgreSQL est la base de données pour stocker les utilisateurs et les métadonnées.
+
+```bash
+# Se connecter à la VM PostgreSQL
+ssh root@192.168.11.101
+
+# Mettre à jour Debian
+apt update && apt upgrade -y
+
+# Installer PostgreSQL
+apt install postgresql postgresql-contrib -y
+
+# Vérifier que c'est actif
+systemctl status postgresql
+
+# Définir un mot de passe pour l'utilisateur postgres
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'VotreMotDePasseSecurise';"
+
+# IMPORTANT : noter ce mot de passe quelque part !
+
+# Trouver la version PostgreSQL installée
+PG_VERSION=$(ls /etc/postgresql/)
+
+# Modifier postgresql.conf pour écouter sur toutes les interfaces
+sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/$PG_VERSION/main/postgresql.conf
+
+# Autoriser les connexions distantes depuis le réseau K3s
+echo "host    cloudvault    postgres    192.168.11.0/24    md5" >> /etc/postgresql/$PG_VERSION/main/pg_hba.conf
+
+# Redémarrer PostgreSQL
+systemctl restart postgresql
+
+# Vérifier qu'il écoute sur toutes les interfaces
+ss -tlnp | grep 5432
+# Tu devrais voir : tcp  0 0 0.0.0.0:5432  LISTEN
+
+# Tester la connexion depuis le master K3s
+ssh root@192.168.11.100
+apt install postgresql-client -y
+psql -h 192.168.11.101 -U postgres -d cloudvault -c "\dt"
+# Si tu vois les tables "users" et "files", c'est bon !
+```
+
+---
+
+### ÉTAPE 6 : Configurer le Stockage NFS dans Kubernetes
+
+Kubernetes doit savoir comment accéder à TrueNAS.
+
+```bash
+# Se connecter au master
+ssh root@192.168.11.100
+
+# Tester manuellement le montage NFS (optionnel mais recommandé)
+mkdir -p /mnt/test-nfs
+mount -t nfs 192.168.11.10:/mnt/pool/cloudvault /mnt/test-nfs
+ls -la /mnt/test-nfs
+# Si tu vois des fichiers ou un dossier vide, c'est bon !
+umount /mnt/test-nfs
+
+# Créer le fichier de configuration du stockage
+cat > nfs-storage.yaml << 'EOF'
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -241,7 +381,7 @@ spec:
   accessModes:
     - ReadWriteMany
   nfs:
-    server: 192.168.1.10
+    server: 192.168.11.10
     path: "/mnt/pool/cloudvault"
 
 ---
@@ -256,471 +396,230 @@ spec:
     requests:
       storage: 500Gi
   volumeName: cloudvault-storage
-```
-
-Appliquer :
-
-```bash
-kubectl apply -f nfs-storage.yaml
-kubectl get pv,pvc
-```
-
-### Étape 5 : Installer PostgreSQL
-
-**Sur VM PostgreSQL :**
-
-```bash
-ssh root@192.168.1.101
-
-# Installer PostgreSQL
-apt update
-apt install postgresql postgresql-contrib -y
-
-# Créer la base de données
-sudo -u postgres psql << EOF
-CREATE DATABASE cloudvault;
-\c cloudvault
-
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  username VARCHAR(255) UNIQUE NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE files (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  filename VARCHAR(255) NOT NULL,
-  filepath VARCHAR(255) NOT NULL,
-  file_size BIGINT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 EOF
 
-# Autoriser les connexions distantes
-echo "host    cloudvault    all    192.168.1.0/24    md5" >> /etc/postgresql/15/main/pg_hba.conf
-systemctl restart postgresql
-```
+# Appliquer cette configuration à Kubernetes
+kubectl apply -f nfs-storage.yaml
 
----
-
-## Installation Application
-
-### Sur ton PC Admin
-
-### Étape 1 : Cloner/Créer le Backend
-
-```bash
-git clone https://github.com/tonusername/cloudvault-api.git
-cd cloudvault-api
-
-# Ou créer de zéro
-mkdir cloudvault-api && cd cloudvault-api
-npm init -y
-npm install express pg bcryptjs jsonwebtoken cors multer dotenv
-npm install --save-dev nodemon
-```
-
-Structure du projet :
-
-```
-cloudvault-api/
-├── src/
-│   ├── index.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   └── files.js
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   └── filesController.js
-│   └── middleware/
-│       └── auth.js
-├── .env
-├── Dockerfile
-└── package.json
-```
-
-Fichier `.env` :
-
-```
-DATABASE_URL=postgresql://postgres:password@192.168.1.101:5432/cloudvault
-JWT_SECRET=votre-secret-tres-securise
-STORAGE_PATH=/app/files
-NODE_ENV=production
-PORT=3000
-```
-
-### Étape 2 : Cloner/Créer le Frontend
-
-```bash
-npx create-react-app cloudvault-frontend
-cd cloudvault-frontend
-npm install axios react-router-dom
-```
-
-Structure :
-
-```
-cloudvault-frontend/
-├── src/
-│   ├── components/
-│   │   ├── Login.js
-│   │   ├── Register.js
-│   │   ├── Dashboard.js
-│   │   └── FileList.js
-│   ├── services/
-│   │   └── api.js
-│   └── App.js
-├── Dockerfile
-└── package.json
-```
-
-Fichier `src/services/api.js` :
-
-```javascript
-import axios from 'axios';
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-
-export const registerUser = (username, email, password) => {
-  return axios.post(`${API_BASE}/auth/register`, { username, email, password });
-};
-
-export const loginUser = (email, password) => {
-  return axios.post(`${API_BASE}/auth/login`, { email, password });
-};
-
-export const getFiles = (token) => {
-  return axios.get(`${API_BASE}/files`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-};
-
-export const uploadFile = (file, token) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  return axios.post(`${API_BASE}/files/upload`, formData, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-};
-
-export const deleteFile = (fileId, token) => {
-  return axios.delete(`${API_BASE}/files/${fileId}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-};
-```
-
----
-
-## Déploiement Kubernetes
-
-### Étape 1 : Créer les Dockerfiles
-
-**cloudvault-api/Dockerfile :**
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY src ./src
-EXPOSE 3000
-CMD ["node", "src/index.js"]
-```
-
-**cloudvault-frontend/Dockerfile :**
-
-```dockerfile
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=builder /app/build /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-### Étape 2 : Construire et Pousser les Images
-
-```bash
-# Build API
-cd cloudvault-api
-docker build -t monusername/cloudvault-api:1.0 .
-
-# Build Frontend
-cd ../cloudvault-frontend
-docker build -t monusername/cloudvault-frontend:1.0 .
-
-# Push sur Docker Hub (ou registre privé)
-docker login
-docker push monusername/cloudvault-api:1.0
-docker push monusername/cloudvault-frontend:1.0
-```
-
-### Étape 3 : Créer le Deployment Kubernetes
-
-Fichier `deployment.yaml` :
-
-```yaml
----
-# API Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: cloudvault-api
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: cloudvault-api
-  template:
-    metadata:
-      labels:
-        app: cloudvault-api
-    spec:
-      containers:
-      - name: api
-        image: monusername/cloudvault-api:1.0
-        ports:
-        - containerPort: 3000
-        env:
-        - name: DATABASE_URL
-          value: "postgresql://postgres:password@192.168.1.101:5432/cloudvault"
-        - name: JWT_SECRET
-          value: "votre-secret-tres-securise"
-        - name: STORAGE_PATH
-          value: "/app/files"
-        volumeMounts:
-        - name: storage
-          mountPath: /app/files
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
-      volumes:
-      - name: storage
-        persistentVolumeClaim:
-          claimName: cloudvault-pvc
-
----
-# API Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: cloudvault-api-service
-spec:
-  selector:
-    app: cloudvault-api
-  ports:
-  - protocol: TCP
-    port: 3000
-    targetPort: 3000
-  type: LoadBalancer
-
----
-# Frontend Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: cloudvault-frontend
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: cloudvault-frontend
-  template:
-    metadata:
-      labels:
-        app: cloudvault-frontend
-    spec:
-      containers:
-      - name: frontend
-        image: monusername/cloudvault-frontend:1.0
-        ports:
-        - containerPort: 80
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "250m"
-
----
-# Frontend Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: cloudvault-frontend-service
-spec:
-  selector:
-    app: cloudvault-frontend
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-  type: LoadBalancer
-```
-
-### Étape 4 : Déployer
-
-```bash
-# Copier deployment.yaml sur VM K3s-Master
-scp deployment.yaml root@192.168.1.100:/root/
-
-# SSH sur Master et déployer
-ssh root@192.168.1.100
-kubectl apply -f deployment.yaml
-
-# Vérifier le déploiement
-kubectl get pods
-kubectl get services
-```
-
----
-
-## Utilisation
-
-### Accéder à CloudVault
-
-Une fois déployé :
-
-```
-Frontend  : http://IP-LOADBALANCER
-API       : http://IP-LOADBALANCER:3000
-```
-
-Récupérer l'IP du LoadBalancer :
-
-```bash
-kubectl get services
-```
-
-### Workflow Utilisateur
-
-1. **S'inscrire**
-   - Aller sur le frontend
-   - Cliquer "Register"
-   - Entrer username, email, password
-   - Compte créé
-
-2. **Se connecter**
-   - Entrer email et password
-   - Obtenir un token JWT
-   - Redirection vers dashboard
-
-3. **Uploader des fichiers**
-   - Sélectionner des fichiers
-   - Cliquer "Upload"
-   - Fichiers sauvegardés sur TrueNAS
-
-4. **Télécharger des fichiers**
-   - Cliquer sur le fichier dans la liste
-   - Fichier téléchargé sur l'ordinateur
-
-5. **Supprimer des fichiers**
-   - Cliquer le bouton "Supprimer"
-   - Fichier supprimé du stockage et BDD
-
----
-
-## Troubleshooting
-
-### Kubernetes
-
-**Les pods ne démarrent pas :**
-
-```bash
-kubectl describe pod cloudvault-api-xxxxx
-kubectl logs cloudvault-api-xxxxx
-```
-
-**Stockage NFS non monté :**
-
-```bash
+# Vérifier que ça fonctionne
 kubectl get pv,pvc
-# Vérifier que le PersistentVolume et Claim existent
-```
 
-### Application
-
-**Erreur de connexion à PostgreSQL :**
-
-```bash
-# Vérifier que PostgreSQL écoute
-ssh root@192.168.1.101
-psql -U postgres -d cloudvault -c "SELECT 1"
-```
-
-**Fichiers non sauvegardés :**
-
-```bash
-# Vérifier le montage NFS
-df -h | grep cloudvault
-ls -la /app/files
-```
-
-### Docker Images
-
-**Image non trouvée :**
-
-```bash
-# Vérifier que l'image est poussée
-docker images | grep cloudvault
-# Ou sur Docker Hub
+# Tu devrais voir :
+# NAME                                  CAPACITY   STATUS   CLAIM
+# persistentvolume/cloudvault-storage   500Gi      Bound    default/cloudvault-pvc
+#
+# NAME                                    STATUS   VOLUME
+# persistentvolumeclaim/cloudvault-pvc    Bound    cloudvault-storage
 ```
 
 ---
 
-## Monitoring (Optionnel)
+### ÉTAPE 7 : Créer les Secrets Kubernetes
 
-Pour ajouter du monitoring avec Prometheus + Grafana :
+Avant de déployer les applications, créer les secrets pour ne pas exposer les mots de passe.
 
 ```bash
-# Installer Prometheus
-kubectl apply -f prometheus-deployment.yaml
+# Se connecter au master
+ssh root@192.168.11.100
 
-# Accéder aux dashboards
-http://IP-LOADBALANCER:9090  (Prometheus)
-http://IP-LOADBALANCER:3000  (Grafana)
+# Créer le secret pour PostgreSQL et JWT
+kubectl create secret generic cloudvault-secrets \
+  --from-literal=db-password='VotreMotDePassePostgreSQL' \
+  --from-literal=jwt-secret=$(openssl rand -base64 32)
+
+# Vérifier
+kubectl get secrets
+
+# Tu devrais voir :
+# NAME                  TYPE     DATA   AGE
+# cloudvault-secrets    Opaque   2      10s
 ```
 
 ---
 
-## Contribution
+## Prochaines Étapes (Développement)
 
-Pour contribuer au projet :
+Une fois l'infrastructure prête, tu dois :
+
+### 1. Développer l'API Node.js (JavaScript - sur ton PC)
+
+- Routes d'authentification (login/register)
+- Routes de fichiers (upload/download/delete)
+- Connexion à PostgreSQL
+- Packages : express, pg, bcryptjs, jsonwebtoken, multer
+
+### 2. Développer le Frontend React (JavaScript/JSX - sur ton PC)
+
+- Pages de login/register
+- Dashboard avec liste des fichiers
+- Formulaire d'upload
+- Packages : react, axios, react-router-dom
+
+### 3. Créer les Dockerfiles (Docker)
+
+- Dockerfile pour l'API Node.js
+- Dockerfile pour le Frontend React
+
+### 4. Construire les images Docker
 
 ```bash
-git clone https://github.com/tonusername/cloudvault.git
-git checkout -b feature/nouvelle-feature
-# Faire les changements
-git commit -m "Ajouter nouvelle feature"
-git push origin feature/nouvelle-feature
-# Créer une Pull Request
+# Se placer dans le dossier de l'API
+cd cloudvault-api
+docker build -t tonusername/cloudvault-api:1.0 .
+
+# Se placer dans le dossier du Frontend
+cd ../cloudvault-frontend
+docker build -t tonusername/cloudvault-frontend:1.0 .
 ```
 
+### 5. Pousser sur Docker Hub
+
+```bash
+docker login
+docker push tonusername/cloudvault-api:1.0
+docker push tonusername/cloudvault-frontend:1.0
+```
+
+### 6. Déployer dans Kubernetes (YAML)
+
+- Créer un fichier `deployment.yaml`
+- `kubectl apply -f deployment.yaml`
+- Accéder à CloudVault !
+
 ---
 
-## License
+## Résumé de la Configuration
 
-Ce projet est sous license MIT. Voir `LICENSE` pour plus de détails.
+```
+Adresses IP à retenir :
+├─ K3s-Master      : 192.168.11.100 (IP FIXE OBLIGATOIRE)
+├─ PostgreSQL      : 192.168.11.101 (IP FIXE OBLIGATOIRE)
+├─ K3s-Worker      : 192.168.11.102 (IP FIXE OBLIGATOIRE) - optionnel
+├─ TrueNAS         : 192.168.11.10  (IP FIXE OBLIGATOIRE)
+└─ PC Admin        : DHCP OK ✅
+
+Base de données PostgreSQL :
+├─ Host       : 192.168.11.101
+├─ Port       : 5432
+├─ Database   : cloudvault
+├─ User       : postgres
+└─ Password   : (défini lors de l'installation - ÉTAPE 5)
+
+Stockage TrueNAS :
+├─ Server   : 192.168.11.10
+├─ Path     : /mnt/pool/cloudvault
+└─ Type     : NFS
+
+Kubernetes K3s :
+├─ Master     : 192.168.11.100
+├─ Worker     : 192.168.11.102 (optionnel)
+└─ Stockage   : Persistent Volume avec NFS
+
+Secrets Kubernetes :
+├─ db-password  : mot de passe PostgreSQL
+└─ jwt-secret   : secret pour les tokens JWT
+```
+
+## IMPORTANT - Configuration IP :
+
+Toutes les machines de l'infrastructure DOIVENT avoir une IP fixe configurée directement dans le système (pas via DHCP avec réservation). Lors de l'installation de Debian sur chaque VM, configurez manuellement l'IP statique.
+Si une IP change, l'infrastructure entière cesse de fonctionner !
 
 ---
 
-## Support
+## Checklist d'Installation
 
-Pour toute question ou problème :
-- Ouvrir une issue sur GitHub
-- Contacter : corazzinialain@gmail.com
+- [ ] TrueNAS avec partage NFS configuré
+- [ ] Réseau vérifié (ping TrueNAS, gateway)
+- [ ] VM K3s-Master créée et Debian installé
+- [ ] VM PostgreSQL créée et Debian installé
+- [ ] VM K3s-Worker créée (optionnel)
+- [ ] K3s installé sur K3s-Master
+- [ ] nfs-common installé sur K3s-Master
+- [ ] K3s installé sur K3s-Worker (si créé)
+- [ ] PostgreSQL installé et base créée
+- [ ] Tables users et files créées
+- [ ] PostgreSQL écoute sur 0.0.0.0:5432
+- [ ] Connexion PostgreSQL testée depuis K3s-Master
+- [ ] Montage NFS testé manuellement
+- [ ] Stockage NFS configuré dans Kubernetes
+- [ ] kubectl get pv,pvc montre "Bound"
+- [ ] Secrets Kubernetes créés
+
+Une fois tout ça complété, l'infrastructure est **prête pour le déploiement** !
+
+---
+
+## Support et Vérification
+
+Pour vérifier que tout fonctionne :
+
+```bash
+# Vérifier les VMs Proxmox
+# → Aller dans l'interface Proxmox, vérifier que toutes les VMs tournent
+
+# Vérifier K3s
+ssh root@192.168.11.100
+kubectl get nodes
+# Doit afficher : Ready
+
+# Vérifier PostgreSQL
+ssh root@192.168.11.101
+psql -U postgres -d cloudvault -c "\dt"
+# Doit afficher : users, files
+
+# Vérifier la connexion PostgreSQL depuis K3s
+ssh root@192.168.11.100
+psql -h 192.168.11.101 -U postgres -d cloudvault -c "SELECT version();"
+# Doit afficher la version PostgreSQL
+
+# Vérifier le stockage NFS
+ssh root@192.168.11.100
+kubectl get pv,pvc
+# Doit afficher : Bound
+
+# Vérifier les secrets
+kubectl get secrets
+# Doit afficher : cloudvault-secrets
+```
+
+Si tout affiche "Ready" et "Bound", **tu es bon à déployer** !
+
+---
+
+## Conseils Importants
+
+### Sécurité
+
+1. **NE JAMAIS** commiter les mots de passe dans Git
+2. Créer un fichier `CREDENTIALS.txt` avec tous vos mots de passe (à ne JAMAIS commit)
+3. Utiliser des mots de passe complexes (au moins 16 caractères)
+
+### Sauvegardes
+
+1. Prendre des **snapshots Proxmox** avant chaque étape majeure
+2. Sauvegarder la base PostgreSQL régulièrement
+3. Sauvegarder le dataset TrueNAS
+
+### Troubleshooting
+
+Si un pod ne démarre pas :
+```bash
+kubectl get pods
+kubectl describe pod nom-du-pod
+kubectl logs nom-du-pod
+```
+
+Si le montage NFS ne fonctionne pas :
+```bash
+# Vérifier que le service NFS tourne sur TrueNAS
+# Vérifier les permissions du dataset
+# Vérifier le firewall
+```
+
+Si PostgreSQL refuse les connexions :
+```bash
+# Vérifier pg_hba.conf
+# Vérifier postgresql.conf (listen_addresses)
+# Vérifier le firewall
+```
