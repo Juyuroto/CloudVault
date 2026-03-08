@@ -1,196 +1,282 @@
-# CloudVault — Guide d'installation et d'architecture
+# CloudVault - Plateforme de Stockage Cloud Self-Hosted
 
-## Qu'est-ce que CloudVault ?
-
-CloudVault est une plateforme de stockage en cloud open source. Les utilisateurs peuvent :
-- Créer un compte personnel
-- Uploader des fichiers
-- Télécharger leurs fichiers de n'importe où
-- Supprimer et gérer leurs fichiers
-
-C'est comme **Google Drive ou Nextcloud**, mais hébergé sur **ta propre infrastructure**.
+**CloudVault** est une plateforme de stockage cloud open source, auto-hébergée, offrant une alternative sécurisée et personnalisable à Google Drive ou Nextcloud. Le projet est conçu pour fonctionner sur une infrastructure privée avec orchestration Kubernetes.
 
 ---
 
-## Architecture du Système
+## Vue d'ensemble
+
+CloudVault permet aux utilisateurs de :
+- Créer un compte personnel sécurisé
+- Uploader des fichiers de n'importe quelle taille
+- Télécharger leurs fichiers à distance via VPN
+- Gérer leur espace de stockage (liste, suppression, organisation)
+- Accéder à leurs données depuis n'importe où de manière sécurisée
+
+### Philosophie du projet
+
+Dans un contexte où la confidentialité des données devient cruciale et où les solutions cloud commerciales imposent des coûts récurrents élevés, CloudVault propose une approche différente : **vous possédez votre infrastructure, vous contrôlez vos données**.
+
+---
+
+## Architecture Technique
+
+### Stack Technologique
+
+**Backend :**
+- **Go 1.21+** avec framework **Gin** (API REST)
+- **PostgreSQL 15** (base de données relationnelle)
+- **JWT** (authentification sécurisée)
+- **Bcrypt** (hashage des mots de passe)
+
+**Frontend :**
+- **React 18** (Single Page Application)
+- **Tailwind CSS** (styling moderne)
+- **Axios** (requêtes HTTP)
+- **React Router** (navigation)
+
+**Infrastructure :**
+- **Kubernetes K3s** (orchestration légère)
+- **Docker** (conteneurisation)
+- **NFS** (stockage distribué)
+- **OpenVPN** (accès distant sécurisé)
+
+**Virtualisation :**
+- **Proxmox VE** (hyperviseur Type 1)
+- **Debian 12** (système d'exploitation des VMs)
+
+---
+
+### Architecture Système
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                        INTERNET                                │
-└────────────────────────┬───────────────────────────────────────┘
-                         │
-                    ┌────▼────┐
-                    │ Routeur │
-                    │ Réseau  │
-                    └────┬────┘
-                         │
-        ┌────────────────┼──────────────┐
-        │                │              │
-   ┌────▼────┐      ┌────▼────┐    ┌────▼────┐
-   │   PC    │      │ Proxmox │    │ TrueNAS │
-   │ Admin   │      │ Serveur │    │ Stockage│
-   │ (Dev)   │      │ Calcul  │    │         │
-   └────┬────┘      └───┬─────┘    └────┬────┘
-        │               │               │
-        │        ┌──────┼──────┐        │
-        │        │      │      │        │
-    ┌───▼──┐  ┌──▼─┐ ┌──▼─┐ ┌──▼─┐      │
-    │ Code │  │K3s │ │K3s │ │PG  │      │
-    │React │  │Mas │ │Wor │ │SQL │      │
-    │Node  │  │ter │ │ker │ │    │      │
-    └──────┘  └──┬─┘ └──┬─┘ └──┬─┘      │
-                 │      │      │        │
-                 └──────┼──────┼────────┤
-                        │      │        │
-              ┌─────────▼──────▼───┐    │
-              │   Kubernetes K3s   │    │
-              │  ┌──────────────┐  │    │
-              │  │ API Pods     │  │    │
-              │  │ (x2 replicas)│  │    │
-              │  │ Frontend Pod │  │    │
-              │  └──────────────┘  │    │
-              │  ┌────────────┐    │    │
-              │  │ Persistent │    │    │
-              │  │ Volume NFS │────┼────┤
-              │  └────────────┘    │    │
-              └────────────────────┘    │
-                                        │
-                            ┌───────────▼──────┐
-                            │ TrueNAS Stockage │
-                            │ - Partage NFS    │
-                            │ - Fichiers users │
-                            │ - Backup         │
-                            └──────────────────┘
-```
-
-### Comment ça marche ?
-
-1. L'utilisateur accède au frontend React via son navigateur  
-2. L'utilisateur se connecte ou crée un compte  
-3. L'utilisateur upload un fichier  
-4. Le frontend envoie le fichier à l'API Node.js  
-5. L'API vérifie l'authentification (JWT token)  
-6. L'API sauvegarde le fichier sur TrueNAS via NFS  
-7. L'API enregistre les métadonnées dans PostgreSQL  
-8. L'API retourne une confirmation  
-9. Le fichier est maintenant stocké en sécurité
-
----
-
-## Technologies Utilisées
-
-Infrastructure :
-- Proxmox — hyperviseur pour créer les VMs  
-- Kubernetes K3s — orchestration légère  
-- Docker — conteneurisation  
-- TrueNAS — stockage via NFS
-
-Développement :
-- Backend : Node.js + Express  
-- Frontend : React 18  
-- Base de données : PostgreSQL  
-- Auth : JWT  
-- Stockage fichiers : NFS via TrueNAS
-
-Langages principaux :
-- JavaScript / JSX, SQL, YAML, Bash
-
----
-
-## Avant de commencer — points pratiques
-- Réseau recommandé : 192.168.11.0/24  
-- Vérifie que TrueNAS (192.168.11.10) répond au ping depuis ton PC admin  
-- Prépare Proxmox pour créer les VMs (k3s-master, postgresql, optionnellement k3s-worker)  
-- Installe Node.js, Docker, Git sur ton PC si tu vas build les images localement
-
-Test rapide :
-```bash
-ping 192.168.11.10   # TrueNAS
-ping 192.168.11.100  # k3s-master
+┌─────────────────────────────────────────────────────────┐
+│                      INTERNET                           │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+                  ┌────▼─────┐
+                  │   VPN    │ OpenVPN (port 1194 UDP)
+                  │ Gateway  │ Accès sécurisé à distance
+                  └────┬─────┘
+                       │
+        ┌──────────────┼─────────────┐
+        │              │             │
+   ┌────▼────┐    ┌────▼────┐   ┌────▼─────┐
+   │ Firewall│    │ Switch  │   │ Storage  │
+   │ pfSense │    │ Managed │   │ Server   │
+   └────┬────┘    └────┬────┘   └────┬─────┘
+        │              │             │
+        └──────┬───────┴──────┬──────┘
+               │              │
+        ┌──────▼──────┐  ┌────▼──────────┐
+        │ VLAN Admin  │  │ VLAN Serveurs │
+        │ Management  │  │ Production    │
+        └─────────────┘  └───┬───────────┘
+                             │
+                    ┌────────┼────────┐
+                    │        │        │
+               ┌────▼───┐┌───▼───┐┌───▼────┐
+               │Hyperv. ││Storage││Network │
+               │Proxmox ││NFS    ││Services│
+               └───┬────┘└───────┘└────────┘
+                   │
+        ┌──────────┼──────────┐
+        │          │          │
+   ┌────▼───┐ ┌───▼────┐ ┌───▼────┐
+   │K3s     │ │PostSQL │ │K3s     │
+   │Master  │ │Server  │ │Worker  │
+   └────────┘ └────────┘ └────────┘
 ```
 
 ---
 
-## Configuration recommandée (IPs statiques)
-- K3s-Master : 192.168.11.100  
-- PostgreSQL  : 192.168.11.101  
-- K3s-Worker  : 192.168.11.102 (optionnel)  
-- TrueNAS     : 192.168.11.10
+### Infrastructure Kubernetes
 
-Important : configure les IPs statiquement dans Debian lors de l'installation des VMs (évite surprises réseau).
-
----
-
-## Étapes clés (résumé pragmatique)
-
-1. TrueNAS : créer dataset `/mnt/pool/cloudvault` et partage NFS (Authorized Networks = 192.168.11.0/24, mapall user = root si besoin)  
-   - Tester le montage depuis une machine Linux (mount -t nfs ...)  
-   - Si "permission denied" → vérifier Authorized Networks, permissions dataset, firewall
-
-2. Proxmox : créer VMs
-   - k3s-master : Debian 12, 8GB RAM, 4 cores, IP 192.168.11.100
-   - postgresql  : Debian 12, 4GB RAM, 2 cores, IP 192.168.11.101
-   - k3s-worker (optionnel) : Debian 12, IP 192.168.11.102
-
-3. Installer K3s sur le master
-   - apt update && apt upgrade -y
-   - apt install nfs-common -y
-   - curl -sfL https://get.k3s.io | sh -
-   - kubectl get nodes (vérifier Ready)
-   - conserver /var/lib/rancher/k3s/server/node-token pour joindre des workers
-
-4. Installer PostgreSQL sur VM dédiée
-   - apt install postgresql
-   - créer database cloudvault et utilisateur applicatif
-   - modifier postgresql.conf (listen_addresses='*') et pg_hba.conf pour autoriser 192.168.11.0/24
-   - redémarrer et tester depuis k3s-master avec psql client
-
-5. Provisionner PV/PVC NFS dans Kubernetes
-   - Créer PersistentVolume pointant sur 192.168.11.10:/mnt/pool/cloudvault
-   - Créer PersistentVolumeClaim (ReadWriteMany)
-   - kubectl get pv,pvc → PVC doit être Bound
-
-6. Créer secrets Kubernetes
-   - kubectl create secret generic cloudvault-secrets --from-literal=db-password='...' --from-literal=jwt-secret=$(openssl rand -base64 32)
-   - Ne jamais commiter ces secrets en clair
-
-7. Développer API (Node.js) et Frontend (React), dockeriser, push sur un registre (Docker Hub ou privé), puis créer Deployment/Service/Ingress dans K3s
+```
+┌─────────────────────────────────────────┐
+│         Kubernetes K3s Cluster          │
+│                                         │
+│  ┌───────────────────────────────────┐  │
+│  │  CloudVault API (Go)              │  │
+│  │  - Replicas: 2                    │  │
+│  │  - Port: 3000                     │  │
+│  │  - Health checks: /health         │  │
+│  └─────────────┬─────────────────────┘  │
+│                │                        │
+│  ┌─────────────▼─────────────────────┐  │
+│  │  CloudVault Frontend (React)      │  │
+│  │  - Replicas: 2                    │  │
+│  │  - Port: 80                       │  │
+│  │  - Nginx web server               │  │
+│  └─────────────┬─────────────────────┘  │
+│                │                        │
+│  ┌─────────────▼─────────────────────┐  │
+│  │  PersistentVolume (NFS)           │  │
+│  │  - Capacity: 500Gi                │  │
+│  │  - Access: ReadWriteMany          │  │
+│  │  - Backend: NFS Storage Server    │  │
+│  └───────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+          │                    │
+          ▼                    ▼
+   ┌─────────────┐      ┌─────────────┐
+   │ PostgreSQL  │      │ NFS Storage │
+   │ Database    │      │ Server      │
+   │ - Users     │      │ - Files     │
+   │ - Metadata  │      │ - Backups   │
+   └─────────────┘      └─────────────┘
+```
 
 ---
 
-## Conseils pratiques & problèmes fréquents
+## Sécurité
 
-- NFS & permissions : les conflits d'UID/GID sont fréquents. Mapall ou aligner les UID peut sauver du temps.  
-- PVC Pending : vérifier que le path NFS est correct et accessible depuis les nodes. Tester montage manuel.  
-- PostgreSQL : si "connection refused", vérifier listen_addresses, pg_hba.conf et firewall.  
-- Pod CrashLoopBackOff : kubectl describe pod && kubectl logs pod pour diagnostiquer.
+### Authentification & Autorisation
+- **JWT tokens** avec expiration configurable (24h par défaut)
+- **Hashage bcrypt** des mots de passe (cost factor: 12)
+- **Middleware d'authentification** sur toutes les routes protégées
+- **Validation des inputs** pour prévenir les injections SQL
 
----
+### Réseau
+- **Segmentation VLAN** : séparation administration/production
+- **Firewall pfSense** : règles strictes par interface
+- **VPN OpenVPN** : accès distant chiffré (AES-256-CBC)
+- **TLS/SSL** : certificats pour toutes les communications HTTPS
 
-## Sécurité & sauvegardes (minimum conseillé)
-- TLS : utiliser Ingress (Traefik) + cert-manager pour HTTPS si tu exposes le service.  
-- Secrets : en production, envisager SealedSecrets, ExternalSecrets ou HashiCorp Vault.  
-- Sauvegarde DB : pg_dump régulier + rotation (ex : conserver 7 jours).  
-- Snapshot TrueNAS : active snapshots automatiques sur le dataset.
-
----
-
-## Checklist finale
-- [ ] TrueNAS dataset + NFS OK  
-- [ ] VMs créées + IPs statiques configurées  
-- [ ] K3s master installé  
-- [ ] PostgreSQL installé, DB et user créés  
-- [ ] PV/PVC NFS appliqué et Bound  
-- [ ] Secrets Kubernetes créés  
-- [ ] Docker images construites & poussées  
-- [ ] Deployments appliqués et pods Ready
+### Stockage
+- **Isolation utilisateurs** : chaque utilisateur accède uniquement à ses fichiers
+- **Métadonnées séparées** : stockage des fichiers (NFS) distinct de la base de données
+- **Backups automatisés** : sauvegardes régulières de la base PostgreSQL
 
 ---
 
-Si tu veux que je génère maintenant :
-- le deployment.yaml complet pour l'API + frontend (avec PVC + secrets)  
-- un Dockerfile pour l'API Node.js prêt à builder  
-- un schéma SQL minimal (tables users, files)  
-- un script de sauvegarde PostgreSQL
+## Déploiement
 
-Dis‑moi lequel tu veux en premier et je le produis prêt à copier/coller.  
+### Prérequis Infrastructure
+
+**Matériel :**
+- Serveur de virtualisation (Proxmox VE 8+)
+- Serveur de stockage avec support NFS
+- Switch réseau manageable (VLANs)
+- Firewall/routeur (pfSense recommandé)
+
+**Logiciels :**
+- Kubernetes K3s
+- Docker Engine
+- PostgreSQL 15+
+- OpenVPN (pour accès distant)
+
+### Machines Virtuelles
+
+**3 VMs Debian 12 minimales :**
+
+```
+VM 1 : K3s-Master
+├─ CPU    : 4 cores
+├─ RAM    : 8 GB
+├─ Disk   : 50 GB
+└─ Role   : Kubernetes master node
+
+VM 2 : PostgreSQL
+├─ CPU    : 2 cores
+├─ RAM    : 4 GB
+├─ Disk   : 30 GB
+└─ Role   : Database server
+
+VM 3 : K3s-Worker (optionnel)
+├─ CPU    : 4 cores
+├─ RAM    : 8 GB
+├─ Disk   : 50 GB
+└─ Role   : Kubernetes worker node
+```
+
+---
+
+## Structure du Projet
+
+```
+cloudvault/
+├── backend/
+│   ├── cmd/
+│   │   └── server/
+│   │       └── main.go
+│   ├── internal/
+│   │   ├── auth/
+│   │   ├── files/
+│   │   ├── middleware/
+│   │   └── database/
+│   ├── Dockerfile
+│   └── go.mod
+│
+├── frontend/
+│   ├── src/
+│   │   ├── assets/
+│   │   │   └── *.css
+│   │   ├── components/
+│   │   │   └── *.jsx
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── package.json
+│
+├── k8s/
+│   └── *.yaml
+│
+├── docs/
+│   └── *.md
+│
+├── .env.example
+├── .gitignore
+└── README.md
+```
+
+---
+
+## Performances
+
+### Capacités
+
+- **Utilisateurs simultanés** : 100+ (avec 2 replicas API)
+- **Stockage** : Limité par le serveur NFS (plusieurs TB possibles)
+- **Upload max** : 5 GB par fichier (configurable)
+- **Débit** : Limité par la bande passante réseau
+
+### Optimisations
+
+- **Streaming de fichiers** : pas de chargement complet en mémoire
+- **Connection pooling** : réutilisation des connexions PostgreSQL
+- **Load balancing** : Kubernetes distribue la charge entre replicas
+- **Caching** : Nginx cache les assets statiques du frontend
+
+---
+
+## ‍Auteur
+
+**Corazzini Alain** - Projet Hub (1er Bachelor 2025)
+
+---
+
+## Remerciements
+
+- [Gin Web Framework](https://github.com/gin-gonic/gin) - Framework Go
+- [React](https://reactjs.org/) - Library frontend
+- [K3s](https://k3s.io/) - Lightweight Kubernetes
+- [PostgreSQL](https://www.postgresql.org/) - Base de données
+- [OpenVPN](https://openvpn.net/) - Solution VPN
+- [Roadmap.sh](https://roadmap.sh/) - L'apprentissage des différentes techno
+
+---
+
+## Support
+
+Pour toute question ou problème :
+- Ouvrir une [issue](https://github.com/Juyuroto/cloudvault/issues)
+- Consulter la [documentation](./docs/)
+- Contacter l'auteur : corazzinialain@gmail.com
+
+---
+
+**CloudVault** - *Vos données, votre infrastructure, votre contrôle.*
