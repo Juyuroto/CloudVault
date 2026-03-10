@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react"
 import demoVideo from "../../assets/videos/test.mp4"
 
+const featureIcons = [
+  { icon: "/icons/security.svg", label: "Sécurité renforcée", alt: "Icône sécurité" },
+  { icon: "/icons/speed.svg", label: "Partage ultra rapide", alt: "Icône vitesse" },
+  { icon: "/icons/link.svg", label: "Liens simples à envoyer", alt: "Icône lien" },
+  { icon: "/icons/folder.svg", label: "Organisation intelligente", alt: "Icône dossier" },
+]
+
 function Main() {
   const videoRef = useRef(null)
   const [videoStatus, setVideoStatus] = useState("En pause")
@@ -49,6 +56,37 @@ function Main() {
     }
   }, [])
 
+  useEffect(() => {
+    const revealElements = document.querySelectorAll(".reveal-on-scroll")
+
+    if (!revealElements.length) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return
+          }
+
+          entry.target.classList.add("is-visible")
+          observer.unobserve(entry.target)
+        })
+      },
+      {
+        threshold: 0.2,
+        rootMargin: "0px 0px -8% 0px",
+      }
+    )
+
+    revealElements.forEach((element) => observer.observe(element))
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
   const handleVideoToggle = () => {
     if (!videoRef.current) {
       return
@@ -66,7 +104,7 @@ function Main() {
 
   return (
     <section className="main-content">
-      <section className="hero-panel">
+      <section className="hero-panel reveal-on-scroll">
         <div className="hero-copy">
           <span className="hero-badge">Stockage cloud simple et sécurisé</span>
           <h1 className="main-title">Stockez et partagez vos fichiers en ligne, sans friction.</h1>
@@ -124,7 +162,7 @@ function Main() {
         </aside>
       </section>
 
-      <section className="visual-showcase">
+      <section className="visual-showcase reveal-on-scroll">
         <div className="visual-header">
           <h2>Une expérience moderne, visuelle et intuitive</h2>
           <p>
@@ -165,14 +203,26 @@ function Main() {
         </div>
 
         <div className="icon-row">
-          <div className="icon-pill"><span>🛡️</span> Sécurité renforcée</div>
-          <div className="icon-pill"><span>⚡</span> Partage ultra rapide</div>
-          <div className="icon-pill"><span>🔗</span> Liens simples à envoyer</div>
-          <div className="icon-pill"><span>📁</span> Organisation intelligente</div>
+          {featureIcons.map((item) => (
+            <div key={item.label} className="icon-pill">
+              <img
+                src={item.icon}
+                alt={item.alt}
+                className="icon-pill-image"
+                loading="lazy"
+                decoding="async"
+                onError={(event) => {
+                  event.currentTarget.onerror = null
+                  event.currentTarget.src = "/icons/security.svg"
+                }}
+              />
+              <span>{item.label}</span>
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="feature-grid">
+      <section className="feature-grid reveal-on-scroll">
         <article className="feature-card">
           <h2>Un stockage centralisé</h2>
           <p>Gardez tous vos fichiers au même endroit et retrouvez-les en quelques secondes.</p>
@@ -187,7 +237,7 @@ function Main() {
         </article>
       </section>
 
-      <section className="sales-banner">
+      <section className="sales-banner reveal-on-scroll">
         <div>
           <h2>Passez à une gestion de fichiers plus simple.</h2>
           <p>Moins de perte de temps, plus de clarté, une image plus pro pour vos échanges.</p>

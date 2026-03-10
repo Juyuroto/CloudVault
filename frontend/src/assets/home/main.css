@@ -10,6 +10,18 @@
   gap: 72px;
 }
 
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(34px);
+  transition: opacity 680ms ease, transform 680ms ease;
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .hero-panel {
   width: 100%;
   max-width: var(--main-max-width);
@@ -43,6 +55,17 @@
   padding: 14px 22px;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 180ms ease, box-shadow 220ms ease, filter 180ms ease;
+}
+
+.main-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.28);
+  filter: brightness(1.05);
+}
+
+.main-button:active {
+  transform: translateY(0);
 }
 
 .hero-copy,
@@ -93,6 +116,12 @@
   padding: 18px;
   border-radius: 14px;
   background: #f8fafc;
+  transition: transform 220ms ease, background-color 220ms ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  background: #eef4ff;
 }
 
 .stat-card strong {
@@ -158,6 +187,12 @@
   border-radius: 12px;
   background: rgba(30, 41, 59, 0.7);
   border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: transform 200ms ease, background-color 200ms ease;
+}
+
+.showcase-list li:hover {
+  transform: translateX(4px);
+  background: rgba(51, 65, 85, 0.82);
 }
 
 .showcase-item-title {
@@ -204,6 +239,12 @@
   border-radius: 14px;
   overflow: hidden;
   background: #0f172a;
+  transition: transform 260ms ease, box-shadow 260ms ease;
+}
+
+.visual-video-wrap:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.35);
 }
 
 .visual-video {
@@ -230,6 +271,7 @@
   font-weight: 700;
   letter-spacing: 0.01em;
   pointer-events: none;
+  transition: background-color 220ms ease, transform 220ms ease;
 }
 
 .visual-text-block {
@@ -270,10 +312,25 @@
   background: #f8fafc;
   color: #334155;
   font-weight: 600;
+  transition: transform 180ms ease, box-shadow 220ms ease, background-color 220ms ease;
 }
 
-.icon-pill span {
-  font-size: 1.1rem;
+.icon-pill:hover {
+  transform: translateY(-2px);
+  background: #eef4ff;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.1);
+}
+
+.icon-pill-image {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+  transition: transform 220ms ease;
+}
+
+.icon-pill:hover .icon-pill-image {
+  transform: scale(1.12);
 }
 
 .feature-grid {
@@ -288,6 +345,13 @@
 
 .feature-card {
   padding: 52px 34px;
+  transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  background-color: #f8fafc;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
 }
 
 .feature-card h2 {
@@ -321,6 +385,22 @@
 .sales-banner p {
   margin: 0;
   color: #475569;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll,
+  .main-button,
+  .stat-card,
+  .showcase-list li,
+  .visual-video-wrap,
+  .visual-status,
+  .icon-pill,
+  .icon-pill-image,
+  .feature-card {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }
 
 @media (max-width: 900px) {

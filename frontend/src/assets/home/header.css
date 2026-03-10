@@ -15,7 +15,6 @@
 .home-brand {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #0f172a;
 }
 
 .home-nav {
@@ -24,23 +23,36 @@
 }
 
 .home-nav-link {
-  color: #334155;
+  color: #ffffff;
   text-decoration: none;
   font-weight: 500;
+  transition: color 200ms ease, opacity 200ms ease;
 }
 
 .home-nav-link:hover {
   color: #2563eb;
+  opacity: 0.95;
 }
 
 .home-header-button {
   border: none;
   border-radius: 8px;
-  background-color: #0f172a;
+  background-color: #2563EB;
   color: #ffffff;
   padding: 10px 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 180ms ease, box-shadow 220ms ease, filter 200ms ease;
+}
+
+.home-header-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+  filter: brightness(1.05);
+}
+
+.home-header-button:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 768px) {
