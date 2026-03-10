@@ -1,0 +1,48 @@
+.home-footer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-footer-title,
+.home-footer-heading {
+  margin: 0;
+  color: #ffffff;
+}
+
+.home-footer-title {
+  font-size: 1.2rem;
+}
+
+.home-footer-heading {
+  font-size: 1rem;
+}
+
+.home-footer-text,
+.home-footer-copy {
+  margin: 0;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.home-footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-footer-link {
+  color: #cbd5e1;
+  text-decoration: none;
+}
+
+.home-footer-link:hover {
+  color: #60a5fa;
+}
+
+@media (max-width: 768px) {
+  .home-footer {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+}

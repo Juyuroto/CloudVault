@@ -1,45 +1,61 @@
 package main
 
 import (
-	"database/sql"
-	"log"
-	"net/http"
-	"os"
-
+	"github.com/Juyuroto/cloudvault/internal/config"
 	"github.com/Juyuroto/cloudvault/internal/database"
-	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
+	"github.com/Juyuroto/cloudvault/internal/handlers"
+	"github.com/Juyuroto/cloudvault/internal/middleware"
+	"log"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
-	//connect to database
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT, email TEXT)")
+	var cfg *config.Config
+	var err error
+	cfg, err = config.Load()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to load configuration:", err)
 	}
 
-	//create router
-	router := mux.NewRouter()
-	router.HandleFunc("/users", database.GetUsers(db)).Methods("GET")
-	router.HandleFunc("/users/{id}", database.GetUser(db)).Methods("GET")
-	router.HandleFunc("/users", database.CreateUser(db)).Methods("POST")
-	router.HandleFunc("/users/{id}", database.UpdateUser(db)).Methods("PUT")
-	router.HandleFunc("/users/{id}", database.DeleteUser(db)).Methods("DELETE")
+	var pool *pgxpool.Pool
+	pool, err = database.Connect(cfg.DatabaseURL)
 
-	//start server
-	log.Fatal(http.ListenAndServe(":8000", jsonContentTypeMiddleware(router)))
-}
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
 
-func jsonContentTypeMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		next.ServeHTTP(w, r)
+	defer pool.Close()
+
+	var router *gin.Engine = gin.Default()
+	router.SetTrustedProxies(nil)
+	router.GET("/", func(c *gin.Context) {
+		// map[string]interface{}
+		// map[string]any{}
+		c.JSON(200, gin.H{
+			"message":  "JSP API is running well!",
+			"status":   "success",
+			"database": "connected",
+		})
 	})
+
+	// router.POST("/auth/register", handlers.CreateUserHandler(pool))
+	// router.POST("/auth/login", handlers.LoginHandler(pool, cfg))
+
+	// protected := router.Group("/JSP")
+	// protected.Use(middleware.AuthMiddleware(cfg))
+	// {
+	// 	protected.POST("", handlers.CreateJSPHandler(pool))
+	// 	protected.GET("", handlers.GetAllJSPHandler(pool))
+	// 	protected.GET("/:id", handlers.GetJSPByIDHandler(pool))
+	// 	protected.PUT("/:id", handlers.UpdateJSPHandler(pool))
+	// 	protected.DELETE("/:id", handlers.DeleteJSPHandler(pool))
+	// }
+
+	// Middleware Test Route
+	router.GET("/protected-test", middleware.AuthMiddleware(cfg), handlers.TestProtectedHandler())
+
+	router.Run(":" + cfg.Port)
 }

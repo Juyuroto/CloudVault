@@ -1,109 +1,40 @@
 package database
 
 import (
-	"database/sql"
-	"encoding/json"
+	"context"
 	"log"
-	"net/http"
 
-	"github.com/Juyuroto/cloudvault/internal/models"
-	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func GetUsers(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT * FROM users")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer rows.Close()
+func Connect(databaseURL string) (*pgxpool.Pool, error) {
+	var ctx context.Context = context.Background()
 
-		users := []model.User{}
-		for rows.Next() {
-			var u model.User
-			if err := rows.Scan(&u.ID, &u.Username, &u.Email); err != nil {
-				log.Fatal(err)
-			}
-			users = append(users, u)
-		}
-		if err := rows.Err(); err != nil {
-			log.Fatal(err)
-		}
+	var config *pgxpool.Config
+	var err error
+	config, err = pgxpool.ParseConfig(databaseURL)
 
-		json.NewEncoder(w).Encode(users)
+	if err != nil {
+		log.Printf("Unable to parse DATABASE_URL: %v", err)
+		return nil, err
 	}
-}
 
-// get user by id
-func GetUser(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		id := vars["id"]
+	var pool *pgxpool.Pool
+	pool, err = pgxpool.NewWithConfig(ctx, config)
 
-		var u model.User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&u.ID, &u.Username, &u.Email)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		json.NewEncoder(w).Encode(u)
+	if err != nil {
+		log.Printf("Unable to create connection pool: %v", err)
+		return nil, err
 	}
-}
 
-// create user
-func CreateUser(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var u model.User
-		json.NewDecoder(r.Body).Decode(&u)
+	err = pool.Ping(ctx)
 
-		err := db.QueryRow("INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id", u.Username, u.Email).Scan(&u.ID)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		json.NewEncoder(w).Encode(u)
+	if err != nil {
+		log.Printf("Unable to ping database: %v", err)
+		pool.Close()
+		return nil, err
 	}
-}
 
-// update user
-func UpdateUser(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var u model.User
-		json.NewDecoder(r.Body).Decode(&u)
-
-		vars := mux.Vars(r)
-		id := vars["id"]
-
-		_, err := db.Exec("UPDATE users SET name = $1, email = $2 WHERE id = $3", u.Username, u.Email, id)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		json.NewEncoder(w).Encode(u)
-	}
-}
-
-// delete user
-func DeleteUser(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		id := vars["id"]
-
-		var u model.User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&u.ID, &u.Username, &u.Email)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		} else {
-			_, err := db.Exec("DELETE FROM users WHERE id = $1", id)
-			if err != nil {
-				//todo : fix error handling
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			json.NewEncoder(w).Encode("User deleted")
-		}
-	}
+	log.Println("Successfully connected to PostgreSQL database")
+	return pool, nil
 }
