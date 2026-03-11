@@ -5,10 +5,21 @@ services:
     build: ./backend
     environment:
       DATABASE_URL: "host=go_db user=postgres password=postgres dbname=postgres sslmode=disable"
+      PORT: "8000"
+      JWT_SECRET: "change-me-in-production"
     ports:
       - "8000:8000"
     depends_on:
       - go_db
+
+  frontend:
+    container_name: cloudvault-frontend
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - go-app
+
   go_db:
     container_name: go_db
     image: postgres:12

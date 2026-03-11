@@ -4,15 +4,23 @@ import "./assets/home/header.css"
 import "./assets/home/main.css"
 import "./assets/home/footer.css"
 
+import { Navigate, Route, Routes } from "react-router-dom"
 import Header from "./components/Home/header"
-import Main from "./components/Home/main"
+import HomeMain from "./components/Home/main"
+import FeaturesMain from "./components/Features/main"
+import ContactMain from "./components/Contact/main"
 import Footer from "./components/Home/footer"
 
 function App() {
   return (
     <main className="home-page">
       <Header />
-      <Main />
+      <Routes>
+        <Route path="/" element={<HomeMain />} />
+        <Route path="/fonctionnalites" element={<FeaturesMain />} />
+        <Route path="/contact" element={<ContactMain />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
       <Footer />
     </main>
   )

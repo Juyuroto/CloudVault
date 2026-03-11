@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react"
+import { NavLink } from "react-router-dom"
 
 function Header() {
   const [isHidden, setIsHidden] = useState(false)
   const lastScrollY = useRef(0)
+
+  const navClassName = ({ isActive }) =>
+    `home-nav-link ${isActive ? "home-nav-link--active" : ""}`
 
   useEffect(() => {
     lastScrollY.current = window.scrollY
@@ -36,9 +40,9 @@ function Header() {
     <header className={`home-header ${isHidden ? "home-header--hidden" : ""}`}>
       <div className="home-brand">CloudVault</div>
       <nav className="home-nav" aria-label="Navigation principale">
-        <a href="#" className="home-nav-link">Accueil</a>
-        <a href="#" className="home-nav-link">Fonctionnalités</a>
-        <a href="#" className="home-nav-link">Contact</a>
+        <NavLink to="/" end className={navClassName}>Accueil</NavLink>
+        <NavLink to="/fonctionnalites" className={navClassName}>Fonctionnalités</NavLink>
+        <NavLink to="/contact" className={navClassName}>Contact</NavLink>
       </nav>
       <button type="button" className="home-header-button">Connexion</button>
     </header>
