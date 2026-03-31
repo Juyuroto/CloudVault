@@ -39,6 +39,9 @@
 }
 
 .home-header-button {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
   border: none;
   border-radius: 8px;
   background-color: #2563EB;

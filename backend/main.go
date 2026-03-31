@@ -1,11 +1,12 @@
 package main
 
 import (
+	"log"
+
 	"github.com/Juyuroto/cloudvault/internal/config"
 	"github.com/Juyuroto/cloudvault/internal/database"
 	"github.com/Juyuroto/cloudvault/internal/handlers"
 	"github.com/Juyuroto/cloudvault/internal/middleware"
-	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,6 +28,11 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
+	err = database.InitializeSchema(pool)
+	if err != nil {
+		log.Fatal("Failed to initialize database schema:", err)
+	}
+
 	defer pool.Close()
 
 	var router *gin.Engine = gin.Default()
@@ -43,6 +49,8 @@ func main() {
 
 	// router.POST("/auth/register", handlers.CreateUserHandler(pool))
 	// router.POST("/auth/login", handlers.LoginHandler(pool, cfg))
+	router.POST("/auth/register", handlers.CreateUserHandler(pool))
+	router.POST("/auth/login", handlers.LoginHandler(pool, cfg))
 
 	// protected := router.Group("/JSP")
 	// protected.Use(middleware.AuthMiddleware(cfg))

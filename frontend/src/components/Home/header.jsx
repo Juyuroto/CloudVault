@@ -44,7 +44,7 @@ function Header() {
         <NavLink to="/fonctionnalites" className={navClassName}>Fonctionnalités</NavLink>
         <NavLink to="/contact" className={navClassName}>Contact</NavLink>
       </nav>
-      <button type="button" className="home-header-button">Connexion</button>
+      <NavLink to="/connexion" className="home-header-button">Connexion</NavLink>
     </header>
   )
 }

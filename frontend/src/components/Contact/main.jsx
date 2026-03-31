@@ -13,7 +13,7 @@ function ContactMain() {
           <div className="hero-stats">
             <div className="stat-card">
               <strong>Email</strong>
-              <span>support@cloudvault.app</span>
+              <span>support@cloudvault.fr</span>
             </div>
             <div className="stat-card">
               <strong>Réponse</strong>
@@ -33,15 +33,15 @@ function ContactMain() {
             <ul className="showcase-list">
               <li>
                 <span className="showcase-item-title">Support technique</span>
-                <span className="showcase-item-text">support@cloudvault.app</span>
+                <span className="showcase-item-text">support@cloudvault.fr</span>
               </li>
               <li>
                 <span className="showcase-item-title">Partenariats</span>
-                <span className="showcase-item-text">partners@cloudvault.app</span>
+                <span className="showcase-item-text">alain.corazzini@cloudvault.fr</span>
               </li>
               <li>
                 <span className="showcase-item-title">Téléphone</span>
-                <span className="showcase-item-text">+41 00 000 00 00</span>
+                <span className="showcase-item-text">+33 6 98 32 94 97</span>
               </li>
             </ul>
           </div>

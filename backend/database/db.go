@@ -7,6 +7,31 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+func InitializeSchema(pool *pgxpool.Pool) error {
+	var ctx context.Context = context.Background()
+
+	_, err := pool.Exec(ctx, `CREATE EXTENSION IF NOT EXISTS pgcrypto;`)
+	if err != nil {
+		return err
+	}
+
+	_, err = pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS users (
+			id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+			email TEXT UNIQUE NOT NULL,
+			password TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Database schema initialized")
+	return nil
+}
+
 func Connect(databaseURL string) (*pgxpool.Pool, error) {
 	var ctx context.Context = context.Background()
 
