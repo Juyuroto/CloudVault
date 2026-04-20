@@ -1,17 +1,16 @@
 services:
-  
   postgres:
     image: postgres:alpine
     environment:
-      POSTGRES_USER: ${POSTGRESQL_USERNAME}
-      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
-      POSTGRES_DB: ${POSTGRESQL_DATABASE}
+      POSTGRES_USER: ${PostgreUser}
+      POSTGRES_PASSWORD: ${PostgrePassword}
+      POSTGRES_DB: ${PostgreDB}
     ports:
-    - ${POSTGRESQL_PORT}:5432
+    - ${PostgrePort}:5432
     volumes:
-    - ./data/postgresql:/var/lib/postgresql/data/
+    - db:/var/lib/postgresql/data
     networks:
-      cloudvault_network
+      - cloudvault_network
   
   backend: 
     build:
@@ -28,13 +27,13 @@ services:
       - PostgrePort=5432
       - PostgreHost=${PostgreHost}
     depends_on:
-      - database
+      - postgres
     networks:
       - cloudvault_network
   
   frontend:
     build:
-      context: ./fontend
+      context: ./frontend
       dockerfile: dockerfile
     container_name: vault_frontend
     restart: unless-stopped
@@ -43,12 +42,14 @@ services:
     volumes:
       - ./frontend:/app:rw
     environment:
-      VITE_API_URL:${VITE_API_URL}
+      VITE_API_URL: ${VITE_API_URL}
     depends_on:
-      - vault_backend
+      - backend
     networks:
       - cloudvault_network
 
+volumes:
+  db:
 
-network: 
+networks: 
   cloudvault_network:
