@@ -8,6 +8,6 @@ COPY . .
 
 RUN go build -o api ./
 
-EXPOSE 8000
+EXPOSE 5005
 
 CMD ["./api"]
