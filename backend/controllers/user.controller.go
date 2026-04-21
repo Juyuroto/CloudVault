@@ -3,6 +3,8 @@ package controllers
 import (
 	"github.com/Juyuroto/cloudvault/config"
 	"github.com/Juyuroto/cloudvault/models"
+	"github.com/Juyuroto/cloudvault/services"
+	
 	"github.com/gin-gonic/gin"
 )
 	
@@ -15,7 +17,15 @@ func GetUserController(c *gin.Context) {
 func CreateUserController(c *gin.Context) {
 	var user models.User
 	c.BindJSON(&user)
-	config.DB.Create(&user)
+	
+	hashed, _ := services.HashPassword(user.Password)
+    user.Password = hashed
+	
+    if err := config.DB.Create(&user).Error; err != nil {
+        c.JSON(400, gin.H{"error": "Impossible de créer l'utilisateur"})
+        return
+    }
+	
 	c.JSON(200, &user)
 }
 
