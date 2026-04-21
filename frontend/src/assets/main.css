@@ -1,0 +1,87 @@
+.main-content {
+  --main-max-width: 1300px;
+  width: 100%;
+  max-width: var(--main-max-width);
+  margin-inline: auto;
+  margin-block: 180px 180px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 72px;
+}
+
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(34px);
+  transition: opacity 680ms ease, transform 680ms ease;
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.main-title {
+  margin: 0 0 18px;
+  color: #0f172a;
+  font-size: clamp(2.2rem, 5vw, 4.2rem);
+  line-height: 1.05;
+}
+
+.main-description {
+  margin: 0 0 24px;
+  color: #475569;
+  line-height: 1.6;
+  font-size: 1.05rem;
+}
+
+.main-button {
+  border: none;
+  border-radius: 10px;
+  background-color: #2563eb;
+  color: #ffffff;
+  padding: 14px 22px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 220ms ease, filter 180ms ease;
+}
+
+.main-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.28);
+  filter: brightness(1.05);
+}
+
+.main-button:active {
+  transform: translateY(0);
+}
+
+.hero-copy,
+.showcase-card,
+.feature-card,
+.sales-banner {
+  border-radius: 20px;
+}
+
+.secondary-button {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll,
+  .main-button,
+  .stat-card,
+  .showcase-list li,
+  .visual-video-wrap,
+  .visual-status,
+  .icon-pill,
+  .icon-pill-image,
+  .feature-card {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

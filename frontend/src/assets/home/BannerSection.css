@@ -1,0 +1,20 @@
+.sales-banner {
+  width: 100%;
+  max-width: var(--main-max-width);
+  box-sizing: border-box;
+  padding: 52px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.sales-banner h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.sales-banner p {
+  margin: 0;
+  color: #475569;
+}

@@ -1,0 +1,32 @@
+.feature-grid {
+  width: 100%;
+  max-width: var(--main-max-width);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 28px;
+  row-gap: 56px;
+}
+
+.feature-card {
+  padding: 52px 34px;
+  transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  background-color: #f8fafc;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+}
+
+.feature-card h2 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 1.2rem;
+}
+
+.feature-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.7;
+}
