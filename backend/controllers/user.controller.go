@@ -20,6 +20,14 @@ func CreateUserController(c *gin.Context) {
 	
 	hashed, _ := services.HashPassword(user.Password)
     user.Password = hashed
+    
+    token, err := services.GenerateToken(user.Email)
+    if err != nil {
+        c.JSON(500, gin.H{"error": "Erreur génération token"})
+        return
+    }
+    
+    user.Token = token
 	
     if err := config.DB.Create(&user).Error; err != nil {
         c.JSON(400, gin.H{"error": "Impossible de créer l'utilisateur"})
@@ -46,13 +54,19 @@ func LoginUserController(c *gin.Context) {
     	c.JSON(401, gin.H{"error": "Utilisateur non trouvé"})
     	return
     }
-    if user.Password != input.Password {
-    	c.JSON(401, gin.H{"error": "Mot de passe incorrect"})
-    	return
+    
+    if !services.CheckPasswordHash(input.Password, user.Password) {
+        c.JSON(401, gin.H{"error": "Identifiants incorrects"})
+        return
     }
     
+    newToken, _ := services.GenerateToken(user.Email)
+    
+    config.DB.Model(&user).Update("Token", newToken)
+        
     c.JSON(200, gin.H{
     	"message": "Connexion réussie",
+     	"token": newToken,
     	"user": gin.H{
         	"id": user.ID,
         	"email": user.Email,
