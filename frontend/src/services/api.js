@@ -1,39 +1,21 @@
-const API_BASE_URL = "" 
+const API_BASE_URL = "http://localhost:5005"
 
-async function parseError(response) {
-    let message = "Une erreur est survenue"
-    try {
-        const payload = await response.json()
-        if (payload?.error) {
-            message = payload.error
-        }
-    } catch {
-        message = response.statusText || message
-    }
-    return message
-}
+const handleError = async (res) => {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || res.statusText || "Erreur serveur");
+};
 
 async function post(path, body) {
-    const response = await fetch(`${API_BASE_URL}${path}`, { 
+    const res = await fetch(`${API_BASE_URL}${path}`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-    })
+    });
 
-    if (!response.ok) {
-        const message = await parseError(response)
-        throw new Error(message)
-    }
-
-    return response.json()
+    if (!res.ok) await handleError(res);
+    return res.json();
 }
 
-export async function loginUser(email, password) {
-    return post("/login", { email, password })
-}
+export const loginUser = (email, password) => post("/login", { email, password });
 
-export async function registerUser(email, password) {
-    return post("/signup", { email, password })
-}
+export const registerUser = (email, password) => post("/signup", { email, password });

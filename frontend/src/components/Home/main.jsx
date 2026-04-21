@@ -9,98 +9,38 @@ const featureIcons = [
 ]
 
 function Main() {
-  const videoRef = useRef(null)
-  const [videoStatus, setVideoStatus] = useState("En pause")
+  const videoRef = useRef(null);
+  const [videoStatus, setVideoStatus] = useState("En pause");
 
   useEffect(() => {
-    const videoElement = videoRef.current
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.target === videoRef.current) {
 
-    if (!videoElement) {
-      return undefined
-    }
-
-    videoElement.muted = true
-    videoElement.defaultMuted = true
-    videoElement.volume = 0
-
-    const keepMuted = () => {
-      videoElement.muted = true
-      videoElement.volume = 0
-    }
-
-    videoElement.addEventListener("volumechange", keepMuted)
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!videoElement) {
-          return
-        }
-
-        if (entry.isIntersecting) {
-          videoElement.play().catch(() => {
-            setVideoStatus("En pause")
-          })
-          return
-        }
-
-        videoElement.pause()
-      },
-      { threshold: 0.55 }
-    )
-
-    observer.observe(videoElement)
-
-    return () => {
-      videoElement.removeEventListener("volumechange", keepMuted)
-      observer.disconnect()
-    }
-  }, [])
-
-  useEffect(() => {
-    const revealElements = document.querySelectorAll(".reveal-on-scroll")
-
-    if (!revealElements.length) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) {
-            return
+          if (entry.isIntersecting) {
+            entry.target.play().catch(() => { });
+          } else {
+            entry.target.pause();
           }
+        } else if (entry.isIntersecting) {
 
-          entry.target.classList.add("is-visible")
-          observer.unobserve(entry.target)
-        })
-      },
-      {
-        threshold: 0.2,
-        rootMargin: "0px 0px -8% 0px",
-      }
-    )
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
 
-    revealElements.forEach((element) => observer.observe(element))
+    if (videoRef.current) observer.observe(videoRef.current);
+    document.querySelectorAll(".reveal-on-scroll").forEach(el => observer.observe(el));
 
-    return () => {
-      observer.disconnect()
-    }
-  }, [])
+    return () => observer.disconnect();
+  }, []);
 
   const handleVideoToggle = () => {
-    if (!videoRef.current) {
-      return
-    }
-
-    if (videoRef.current.paused) {
-      videoRef.current.play()
-      setVideoStatus("En lecture")
-      return
-    }
-
-    videoRef.current.pause()
-    setVideoStatus("En pause")
-  }
+    const v = videoRef.current;
+    if (!v) return;
+    v.paused ? v.play() : v.pause();
+  };
 
   return (
     <section className="main-content">
@@ -109,7 +49,7 @@ function Main() {
           <span className="hero-badge">Stockage cloud simple et sécurisé</span>
           <h1 className="main-title">Stockez et partagez vos fichiers en ligne, sans friction.</h1>
           <p className="main-description">
-            CloudVault vous aide à centraliser vos documents, collaborer rapidement et garder le contrôle sur vos fichiers depuis n&apos;importe où.
+            CloudVault vous aide à centraliser vos documents, collaborer rapidement et garder le contrôle sur vos fichiers depuis n'importe où.
           </p>
 
           <div className="hero-actions">
@@ -128,7 +68,7 @@ function Main() {
             </div>
             <div className="stat-card">
               <strong>24/7</strong>
-              <span>accès depuis n&apos;importe quel appareil</span>
+              <span>accès depuis n'importe quel appareil</span>
             </div>
           </div>
         </div>
@@ -193,11 +133,11 @@ function Main() {
             <h3>Montrez votre produit en action</h3>
             <p>
               Remplacez cette vidéo par la vôtre pour présenter rapidement CloudVault,
-              son interface et ses avantages en moins d&apos;une minute.
+              son interface et ses avantages en moins d'une minute.
             </p>
             <p>
-              Cette zone de texte est faite pour ton argumentaire commercial : cas d&apos;usage,
-              bénéfices concrets et appel à l&apos;action.
+              Cette zone de texte est faite pour ton argumentaire commercial : cas d'usage,
+              bénéfices concrets et appel à l'action.
             </p>
           </article>
         </div>

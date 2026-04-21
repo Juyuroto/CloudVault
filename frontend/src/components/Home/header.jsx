@@ -9,31 +9,18 @@ function Header() {
     `home-nav-link ${isActive ? "home-nav-link--active" : ""}`
 
   useEffect(() => {
-    lastScrollY.current = window.scrollY
-
     const handleScroll = () => {
-      const currentScrollY = window.scrollY
+      const current = window.scrollY
+      const diff = current - lastScrollY.current
 
-      if (currentScrollY <= 20) {
-        setIsHidden(false)
-        lastScrollY.current = currentScrollY
-        return
-      }
+      if (current <= 20) setIsHidden(false)
+      else if (Math.abs(diff) > 6) setIsHidden(diff > 0)
 
-      if (currentScrollY > lastScrollY.current + 6) {
-        setIsHidden(true)
-      } else if (currentScrollY < lastScrollY.current - 6) {
-        setIsHidden(false)
-      }
-
-      lastScrollY.current = currentScrollY
+      lastScrollY.current = current
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-    }
+    return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   return (

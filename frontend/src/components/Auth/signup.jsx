@@ -56,40 +56,19 @@ function SignupMain() {
 
         <div className="auth-field">
           <label htmlFor="signup-email">Email</label>
-          <input
-            id="signup-email"
-            name="email"
-            type="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="vous@exemple.com"
-            required
+          <input id="signup-email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="vous@exemple.com" required
           />
         </div>
 
         <div className="auth-field">
           <label htmlFor="signup-password">Mot de passe</label>
-          <input
-            id="signup-password"
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-            placeholder="Minimum 6 caractères"
-            required
+          <input id="signup-password" name="password" type="password" value={form.password} onChange={handleChange} placeholder="Minimum 6 caractères" required
           />
         </div>
 
         <div className="auth-field">
           <label htmlFor="signup-confirm-password">Confirmer le mot de passe</label>
-          <input
-            id="signup-confirm-password"
-            name="confirmPassword"
-            type="password"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            placeholder="Répétez votre mot de passe"
-            required
+          <input id="signup-confirm-password" name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} placeholder="Répétez votre mot de passe" required
           />
         </div>
 

@@ -50,7 +50,7 @@ services:
       - ./frontend:/app:Z
       - /app/node_modules
     environment:
-      VITE_API_URL: ${VITE_API_URL}
+      API_BASE_URL: ${API_BASE_URL}
     depends_on:
       - backend
     networks:
