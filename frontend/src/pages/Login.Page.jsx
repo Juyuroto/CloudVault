@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
 
-import { loginUser } from "../services/api"
+import { loginUser } from "../services/API.js"
 
 import Email from "../components/Auth/Login/EmailSection.jsx"
 import Password from "../components/Auth/Login/PasswordSection.jsx"
@@ -22,7 +22,7 @@ function LoginPage() {
     try {
       const data = await loginUser(form.email, form.password)
       
-      localStorage.setItem("token", data.token)
+      localStorage.setItem("auth_token", data.token)
             
       navigate("/cloud", { replace: true })
     } catch (err) {

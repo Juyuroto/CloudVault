@@ -1,5 +1,6 @@
 // Import REACT
 import { Navigate, Route, Routes } from "react-router-dom"
+import PrivateRoute from "./services/PrivateRoute.jsx"
 
 // Import CSS
 import "./assets/index.css"
@@ -24,19 +25,26 @@ function App() {
   return (
     <main className="home-page">
       <Routes>
+
         <Route path="/" element={<HomePage />} />
-        
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/fonctionnalites" element={<FeaturePage />} /> 
-        
-        <Route path="/cloud" element={<CloudPage />} />
+        <Route path="/fonctionnalites" element={<FeaturePage />} />
         <Route path="/connexion" element={<LoginPage />} />
         <Route path="/inscription" element={<SignupPage />} />
-        
+
+        <Route 
+          path="/cloud" 
+          element={
+            <PrivateRoute>
+              <CloudPage />
+            </PrivateRoute>
+          } 
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>
-  )
+  );
 }
 
 export default App

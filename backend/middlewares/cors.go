@@ -10,11 +10,11 @@ func CorsMiddleware() gin.HandlerFunc {
         c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5000")
         
         c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-        c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, Authorization, Origin, Accept")
-        c.Writer.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PATCH, DELETE, PUT")
+        c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, Authorization, Origin, Accept, X-Requested-With")
+        c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 
         if c.Request.Method == "OPTIONS" {
-            c.AbortWithStatus(http.StatusNoContent)
+            c.AbortWithStatus(http.StatusOK)
             return
         }
 

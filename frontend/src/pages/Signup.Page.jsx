@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
-import { loginUser, registerUser } from "../services/api"
+import { loginUser, registerUser } from "../services/API.js"
 
 import Email from "../components/Auth/Signup/EmailSection.jsx"
 import Password from "../components/Auth/Signup/PasswordSection.jsx"
